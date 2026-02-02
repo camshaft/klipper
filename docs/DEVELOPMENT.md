@@ -154,6 +154,16 @@ If you encounter build errors for cffi or greenlet:
 - On Debian/Ubuntu: `sudo apt-get install build-essential python3-dev libffi-dev`
 - On other systems, refer to `scripts/install-*.sh` for system-specific packages
 
+## Security Note
+
+The dependency versions in `pyproject.toml` match those in the existing requirements files to maintain compatibility. Some dependencies (like MarkupSafe 1.1.1 and mkdocs 1.2.4) are older versions. If you're concerned about security:
+
+- For production use, follow the official installation guide which uses tested versions
+- For development, consider updating dependencies after thorough testing
+- Documentation dependencies (mkdocs) are only needed for building docs, not for runtime
+
+When updating dependencies, test thoroughly and update both `pyproject.toml` and the corresponding requirements files in `scripts/`.
+
 ## More Information
 
 For detailed installation instructions and system setup, see:
