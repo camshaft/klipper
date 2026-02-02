@@ -4,3 +4,8 @@ out
 .config
 .config.old
 klippy/.version
+# Python packaging artifacts
+*.egg-info/
+dist/
+build/
+__pycache__/
