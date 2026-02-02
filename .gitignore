@@ -9,3 +9,8 @@ klippy/.version
 dist/
 build/
 __pycache__/
+# Rust artifacts
+target/
+Cargo.lock
+*.pyd
+*.dylib

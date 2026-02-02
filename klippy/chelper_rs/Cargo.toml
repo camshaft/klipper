@@ -1,0 +1,24 @@
+# Rust implementation of performance-critical chelper modules
+#
+# This crate provides Rust implementations of the C helper modules used by
+# Klippy, with Python bindings via PyO3. This enables gradual migration from
+# C to Rust while maintaining full compatibility with the existing Python code.
+
+[package]
+name = "chelper_rs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lib]
+name = "chelper_rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3.workspace = true
+libc.workspace = true
+
+[build-dependencies]
+pyo3-build-config = "0.22"
