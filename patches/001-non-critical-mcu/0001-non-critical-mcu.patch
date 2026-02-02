@@ -22,14 +22,15 @@ Changes:
 - Bypass restart checks for non-critical MCUs to prevent printer restart
 - Direct serial connection for reconnection avoiding restart logic
 - All lines under 80 characters for code style compliance
+- Correct emergency_stop_cmd assignment to conn_helper
 
 Based on Kalico PR #339, adapted for current Klipper architecture.
 
 Co-authored-by: camshaft <799311+camshaft@users.noreply.github.com>
 ---
  klippy/clocksync.py |   10 ++++
- klippy/mcu.py       |  115 +++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 124 insertions(+), 1 deletion(-)
+ klippy/mcu.py       |  116 +++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 125 insertions(+), 1 deletion(-)
 
 diff --git a/klippy/clocksync.py b/klippy/clocksync.py
 index 80ed9db..3d0927f 100644
@@ -69,7 +70,7 @@ index 80ed9db..3d0927f 100644
          sample_time, clock, freq = self.clock_est
          return ("clocksync state: mcu_freq=%d last_clock=%d"
 diff --git a/klippy/mcu.py b/klippy/mcu.py
-index 909b8dd..ac2bbb3 100644
+index 909b8dd..668f4ac 100644
 --- a/klippy/mcu.py
 +++ b/klippy/mcu.py
 @@ -758,13 +758,19 @@ class MCUConnectHelper:
@@ -138,7 +139,7 @@ index 909b8dd..ac2bbb3 100644
          # Low-level connection and helpers
          self._conn_helper = MCUConnectHelper(config, self, clocksync)
          self._serial = self._conn_helper.get_serial()
-@@ -1091,6 +1123,81 @@ class MCU:
+@@ -1091,6 +1123,88 @@ class MCU:
          return self._printer
      def is_fileoutput(self):
          return self._printer.get_start_args().get('debugoutput') is not None
@@ -149,7 +150,8 @@ index 909b8dd..ac2bbb3 100644
 +    def _handle_shutdown_event(self):
 +        # Cancel reconnection timer on printer shutdown
 +        if not self._is_critical:
-+            self._reactor.update_timer(self._reconnect_timer, self._reactor.NEVER)
++            self._reactor.update_timer(self._reconnect_timer,
++                                       self._reactor.NEVER)
 +    def _reconnect_event(self, eventtime):
 +        # Attempt to reconnect a non-critical MCU
 +        if self._is_critical or not self._disconnected:
@@ -163,7 +165,9 @@ index 909b8dd..ac2bbb3 100644
 +            # Try to reattach - for non-critical MCUs, bypass restart checks
 +            # that could trigger a full printer restart
 +            try:
-+                if self._conn_helper._restart_helper._restart_method == 'rpi_usb':
++                restart_helper = self._conn_helper._restart_helper
++                restart_method = restart_helper._restart_method
++                if restart_method == 'rpi_usb':
 +                    # Skip the rpi_usb restart check for non-critical MCUs
 +                    serialport, baud = self._conn_helper.get_serialport()
 +                    if not os.path.exists(serialport):
@@ -175,8 +179,9 @@ index 909b8dd..ac2bbb3 100644
 +                                                nodeid,
 +                                                self._conn_helper._canbus_iface)
 +                elif self._conn_helper._baud:
-+                    rts = self._conn_helper._restart_helper.lookup_attach_uart_rts()
-+                    self._serial.connect_uart(self._conn_helper._serialport,
++                    rts = restart_helper.lookup_attach_uart_rts()
++                    serialport = self._conn_helper._serialport
++                    self._serial.connect_uart(serialport,
 +                                             self._conn_helper._baud, rts)
 +                else:
 +                    self._serial.connect_pipe(self._conn_helper._serialport)
@@ -188,9 +193,12 @@ index 909b8dd..ac2bbb3 100644
 +            self._conn_helper.reset_connection_state()
 +            # Re-register response handlers
 +            self._emergency_stop_cmd = self.lookup_command("emergency_stop")
-+            self.register_response(self._conn_helper._handle_shutdown, 'shutdown')
-+            self.register_response(self._conn_helper._handle_shutdown, 'is_shutdown')
-+            self.register_response(self._conn_helper._handle_starting, 'starting')
++            self.register_response(self._conn_helper._handle_shutdown,
++                                  'shutdown')
++            self.register_response(self._conn_helper._handle_shutdown,
++                                  'is_shutdown')
++            self.register_response(self._conn_helper._handle_starting,
++                                  'starting')
 +            # Mark as connected
 +            self._disconnected = False
 +            logging.info("MCU '%s' reconnected", self._name)

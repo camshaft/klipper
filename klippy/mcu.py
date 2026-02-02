@@ -1172,7 +1172,8 @@ class MCU:
             # Reset connection state in conn_helper
             self._conn_helper.reset_connection_state()
             # Re-register response handlers
-            self._emergency_stop_cmd = self.lookup_command("emergency_stop")
+            self._conn_helper._emergency_stop_cmd = \
+                self.lookup_command("emergency_stop")
             self.register_response(self._conn_helper._handle_shutdown,
                                   'shutdown')
             self.register_response(self._conn_helper._handle_shutdown,
