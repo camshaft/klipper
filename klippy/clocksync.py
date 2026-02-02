@@ -141,6 +141,11 @@ class ClockSync:
         return last_clock + clock_diff
     def is_active(self):
         return self.queries_pending <= 4
+    def disconnect(self):
+        # Mark clock sync as inactive by setting high queries_pending
+        self.queries_pending = 999999
+        # Cancel the periodic get_clock timer
+        self.reactor.update_timer(self.get_clock_timer, self.reactor.NEVER)
     def dump_debug(self):
         sample_time, clock, freq = self.clock_est
         return ("clocksync state: mcu_freq=%d last_clock=%d"

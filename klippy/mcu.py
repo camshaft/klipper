@@ -758,13 +758,20 @@ class MCUConnectHelper:
         shutdown_clock = params.get("clock")
         if shutdown_clock is not None:
             shutdown_clock = self._mcu.clock32_to_clock64(shutdown_clock)
+        # Skip shutdown notification for non-critical MCUs
+        if self._mcu.is_non_critical():
+            logging.info("Non-critical MCU '%s' shutdown: %s",
+                         self._name, msg)
+            self._mcu._handle_non_critical_disconnect()
+            return
         event_type = params['#name']
         self._printer.invoke_async_shutdown(
             "MCU shutdown", {"reason": msg, "mcu": self._name,
                              "event_type": event_type,
                              "shutdown_clock": shutdown_clock})
     def _handle_starting(self, params):
-        if not self._is_shutdown:
+        # Skip spontaneous restart notification for non-critical MCUs
+        if not self._is_shutdown and not self._mcu.is_non_critical():
             self._printer.invoke_async_shutdown("MCU '%s' spontaneous restart"
                                                 % (self._name,))
     def log_info(self):
@@ -839,6 +846,12 @@ class MCUConnectHelper:
             or self._is_timeout):
             return
         self._is_timeout = True
+        # Handle non-critical MCU timeout differently
+        if self._mcu.is_non_critical():
+            logging.info("Non-critical MCU '%s' timeout (eventtime=%f)",
+                         self._name, eventtime)
+            self._mcu._handle_non_critical_disconnect()
+            return
         logging.info("Timeout with MCU '%s' (eventtime=%f)",
                      self._name, eventtime)
         self._printer.invoke_shutdown("Lost communication with MCU '%s'" % (
@@ -1074,6 +1087,17 @@ class MCU:
         self._name = config.get_name()
         if self._name.startswith('mcu '):
             self._name = self._name[4:]
+        # Non-critical MCU support
+        self._is_non_critical = config.getboolean('is_non_critical', False)
+        if self._is_non_critical and self._name == 'mcu':
+            raise config.error("Primary MCU cannot be marked as non-critical")
+        self._non_critical_disconnected = False
+        self._reactor = printer.get_reactor()
+        if self._is_non_critical:
+            self._reconnect_timer = self._reactor.register_timer(
+                self._reconnect_event, self._reactor.NEVER)
+            self._reconnect_interval = config.getfloat('reconnect_interval',
+                                                       2.0, above=0.)
         # Low-level connection and helpers
         self._conn_helper = MCUConnectHelper(config, self, clocksync)
         self._serial = self._conn_helper.get_serial()
@@ -1091,6 +1115,39 @@ class MCU:
         return self._printer
     def is_fileoutput(self):
         return self._printer.get_start_args().get('debugoutput') is not None
+    def is_non_critical(self):
+        return self._is_non_critical
+    def is_non_critical_disconnected(self):
+        return self._non_critical_disconnected
+    def _reconnect_event(self, eventtime):
+        # Attempt to reconnect a non-critical MCU
+        if not self._is_non_critical or not self._non_critical_disconnected:
+            return self._reactor.NEVER
+        try:
+            # Try to reattach
+            self._conn_helper._attach()
+            # Reconnect clocksync
+            self._clocksync.connect(self._serial)
+            # Reset is_shutdown and is_timeout flags in conn_helper
+            self._conn_helper._is_shutdown = False
+            self._conn_helper._is_timeout = False
+            # Mark as connected
+            self._non_critical_disconnected = False
+            logging.info("Non-critical MCU '%s' reconnected", self._name)
+            return self._reactor.NEVER
+        except:
+            # Reconnection failed, try again later
+            return eventtime + self._reconnect_interval
+    def _handle_non_critical_disconnect(self):
+        # Called when a non-critical MCU disconnects
+        if not self._is_non_critical:
+            return
+        self._non_critical_disconnected = True
+        self._clocksync.disconnect()
+        logging.info("Non-critical MCU '%s' disconnected", self._name)
+        # Schedule reconnection attempts
+        self._reactor.update_timer(self._reconnect_timer,
+                                   self._reactor.NOW)
     # MCU Configuration wrappers
     def setup_pin(self, pin_type, pin_params):
         return self._config_helper.setup_pin(pin_type, pin_params)
