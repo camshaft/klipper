@@ -18,14 +18,17 @@ Changes:
 - Guards against multiple disconnect invocations and race conditions
 - Cleanup serial connection before reconnect and re-register handlers
 - Cancel reconnection timer on printer shutdown
+- Skip reconnection in debug/fileoutput mode
+- Bypass restart checks for non-critical MCUs to prevent printer restart
+- Direct serial connection for reconnection avoiding restart logic
 
 Based on Kalico PR #339, adapted for current Klipper architecture.
 
 Co-authored-by: camshaft <799311+camshaft@users.noreply.github.com>
 ---
  klippy/clocksync.py |   10 ++++
- klippy/mcu.py       |   82 +++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 91 insertions(+), 1 deletion(-)
+ klippy/mcu.py       |  110 +++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 119 insertions(+), 1 deletion(-)
 
 diff --git a/klippy/clocksync.py b/klippy/clocksync.py
 index 80ed9db..3d0927f 100644

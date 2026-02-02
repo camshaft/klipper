@@ -1103,8 +1103,9 @@ class MCU:
             self._reconnect_interval = config.getfloat('reconnect_interval',
                                                        2.0, above=0.)
             # Register shutdown handler to cancel reconnection timer
-            printer.register_event_handler("klippy:shutdown",
-                                          self._handle_shutdown_event)
+            printer.register_event_handler(
+                "klippy:shutdown",
+                self._handle_shutdown_event)
         # Low-level connection and helpers
         self._conn_helper = MCUConnectHelper(config, self, clocksync)
         self._serial = self._conn_helper.get_serial()
@@ -1134,11 +1135,34 @@ class MCU:
         # Attempt to reconnect a non-critical MCU
         if self._is_critical or not self._disconnected:
             return self._reactor.NEVER
+        # Skip reconnection in file output (debug) mode
+        if self.is_fileoutput():
+            return self._reactor.NEVER
         try:
             # Disconnect serial before reconnecting
             self._serial.disconnect()
-            # Try to reattach
-            self._conn_helper._attach()
+            # Try to reattach - for non-critical MCUs, bypass restart checks
+            # that could trigger a full printer restart
+            try:
+                if self._conn_helper._restart_helper._restart_method == 'rpi_usb':
+                    # Skip the rpi_usb restart check for non-critical MCUs
+                    serialport, baud = self._conn_helper.get_serialport()
+                    if not os.path.exists(serialport):
+                        raise error("Serial port does not exist")
+                if self._conn_helper._canbus_iface is not None:
+                    cbid = self._printer.lookup_object('canbus_ids')
+                    nodeid = cbid.get_nodeid(self._conn_helper._serialport)
+                    self._serial.connect_canbus(self._conn_helper._serialport,
+                                                nodeid,
+                                                self._conn_helper._canbus_iface)
+                elif self._conn_helper._baud:
+                    rts = self._conn_helper._restart_helper.lookup_attach_uart_rts()
+                    self._serial.connect_uart(self._conn_helper._serialport,
+                                             self._conn_helper._baud, rts)
+                else:
+                    self._serial.connect_pipe(self._conn_helper._serialport)
+            except (serialhdl.error, OSError) as e:
+                raise error("Failed to connect: %s" % str(e))
             # Reconnect clocksync
             self._clocksync.connect(self._serial)
             # Reset connection state in conn_helper
@@ -1154,7 +1178,7 @@ class MCU:
             # Send event to notify UI
             self._printer.send_event("klippy:mcu_reconnected", self._name)
             return self._reactor.NEVER
-        except (serialhdl.error, OSError) as e:
+        except (serialhdl.error, OSError, error) as e:
             # Reconnection failed, try again later
             logging.debug("MCU '%s' reconnection failed: %s",
                          self._name, str(e))
