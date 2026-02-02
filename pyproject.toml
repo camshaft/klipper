@@ -61,7 +61,6 @@ graphing = [
 ]
 
 # Documentation building dependencies
-# Note: Jinja2 is already included in core dependencies and is compatible with mkdocs
 docs = [
     "mkdocs==1.2.4",
     "mkdocs-material==8.1.3",
