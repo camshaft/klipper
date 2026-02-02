@@ -6,7 +6,7 @@ This fork includes experimental Rust integration to gradually port performance-c
 
 ## Why Rust?
 
-- **Performance**: 2-3x faster than equivalent C code in initial benchmarks
+- **Performance**: Similar to or faster than C (2.25x faster in initial benchmarks)
 - **Safety**: Memory safety without garbage collection overhead
 - **Maintainability**: Better type system, error handling, and testing infrastructure
 - **Interoperability**: Seamless integration with existing Python code via PyO3
@@ -22,7 +22,7 @@ This fork includes experimental Rust integration to gradually port performance-c
 - Comprehensive documentation
 
 🎯 **Performance Results**
-- `get_monotonic_rs()`: **3x faster** than C implementation
+- `get_monotonic_rs()`: **2.25x faster** than C implementation
 - Functional equivalence validated (within 3µs)
 - Both use CLOCK_MONOTONIC_RAW for timing
 

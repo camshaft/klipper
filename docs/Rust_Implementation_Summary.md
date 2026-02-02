@@ -63,7 +63,7 @@ Testing get_monotonic():
 **Implementation**:
 - ✅ Identified bottlenecks through code analysis
 - ✅ Prioritized performance-critical modules
-- ✅ Demonstrated 2.5x speedup in initial implementation
+- ✅ Demonstrated 2.25x speedup in initial implementation
 - ✅ Documented migration priority order
 
 **Evidence**:
@@ -77,7 +77,7 @@ Testing get_monotonic():
 - **Performance Results**:
   - Rust: 69.81 ns/call
   - C: 157.34 ns/call
-  - Speedup: **2.5x faster**
+  - Speedup: **2.25x faster**
 
 ## 📊 Deliverables
 
@@ -115,7 +115,7 @@ Testing get_monotonic():
        │  (chelper/)        │    │ (chelper_rs/)     │
        │                    │    │                   │
        │  • Existing code   │    │ • New code        │
-       │  • Unchanged       │    │ • 2.5x faster     │
+       │  • Unchanged       │    │ • 2.25x faster    │
        │  • CFFI bindings   │    │ • PyO3 bindings   │
        │  • Phase out       │    │ • Memory safe     │
        └────────────────────┘    └───────────────────┘
@@ -132,7 +132,7 @@ Testing get_monotonic():
 - [x] Benchmarking tools
 
 ### Phase 2: Utility Functions ✅ COMPLETE
-- [x] get_monotonic_rs() - 2.5x faster than C
+- [x] get_monotonic_rs() - 2.25x faster than C
 - [x] benchmark_overhead() - Testing tool
 - [x] Functional equivalence validation
 
@@ -146,7 +146,7 @@ Testing get_monotonic():
 - [ ] Port itersolve.c to Rust
 - [ ] Iterative position solving
 - [ ] Most CPU-intensive component
-- [ ] Expected 2-3x speedup
+- [ ] Expected 2-3x speedup (based on computational complexity)
 
 ### Phase 5: Additional Modules
 - [ ] stepcompress.c
@@ -231,7 +231,7 @@ duration = chelper_rs.benchmark_overhead(1000)
 ## ✨ Key Achievements
 
 1. ✅ **Zero breaking changes** - Existing code works unchanged
-2. ✅ **Proven performance** - 2.5x faster in benchmarks
+2. ✅ **Proven performance** - 2.25x faster in benchmarks
 3. ✅ **Complete infrastructure** - Ready for production porting
 4. ✅ **Comprehensive docs** - Easy for contributors to continue
 5. ✅ **Validated approach** - Functional equivalence demonstrated
