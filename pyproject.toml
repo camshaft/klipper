@@ -83,10 +83,6 @@ Documentation = "https://www.klipper3d.org/Overview.html"
 Repository = "https://github.com/Klipper3d/klipper"
 "Bug Tracker" = "https://github.com/Klipper3d/klipper/issues"
 
-[tool.setuptools]
-# Automatically discover all packages under klippy
-packages = {find = {where = ["."], include = ["klippy*"]}}
-
-[tool.setuptools.package-data]
-# Include all Python files in the klippy package
-"*" = ["*.py"]
+# Klipper is designed to run directly from the source tree and is not
+# packaged as an importable Python module, so no setuptools package
+# discovery or package-data configuration is defined here.
