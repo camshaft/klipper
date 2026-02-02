@@ -3,7 +3,11 @@
 # Copyright (C) 2024  Klipper Contributors
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import os, sys, logging, subprocess, shutil
+import os
+import sys
+import logging
+import subprocess
+import shutil
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 RUST_LIB_PATH = os.path.join(REPO_ROOT, "target", "release")

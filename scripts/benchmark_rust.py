@@ -56,10 +56,11 @@ def main():
             speedup = c_total / total
             print(f"  vs C get_monotonic: {c_per_call:.2f}ns/call ({speedup:.2f}x)")
     
+    # Benchmark overhead function
+    OVERHEAD_ITERATIONS = 1000
     if hasattr(rust_lib, 'benchmark_overhead'):
-        # Test with small iteration count
-        result = rust_lib.benchmark_overhead(1000)
-        print(f"\nbenchmark_overhead(1000): {result*1e6:.2f}µs")
+        result = rust_lib.benchmark_overhead(OVERHEAD_ITERATIONS)
+        print(f"\nbenchmark_overhead({OVERHEAD_ITERATIONS}): {result*1e6:.2f}µs")
     
     return 0
 

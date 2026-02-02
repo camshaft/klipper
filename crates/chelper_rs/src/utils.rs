@@ -10,7 +10,9 @@ use std::time::Instant;
 /// Get monotonic time in seconds (Rust implementation)
 ///
 /// Uses std::time::Instant for idiomatic Rust timing.
-/// Returns seconds since an arbitrary starting point (monotonic).
+/// Note: Returns elapsed time since first call, not absolute monotonic time.
+/// This is different from the C implementation but more idiomatic in Rust.
+/// For benchmarking purposes, relative timing is sufficient.
 #[pyfunction]
 pub fn get_monotonic_rs() -> PyResult<f64> {
     // Note: Instant doesn't provide absolute time, only elapsed
