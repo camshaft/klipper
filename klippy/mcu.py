@@ -1103,7 +1103,7 @@ class MCU:
             self._reconnect_interval = config.getfloat('reconnect_interval',
                                                        2.0, above=0.)
             # Register shutdown handler to cancel reconnection timer
-            printer.register_event_handler("klippy:shutdown", 
+            printer.register_event_handler("klippy:shutdown",
                                           self._handle_shutdown_event)
         # Low-level connection and helpers
         self._conn_helper = MCUConnectHelper(config, self, clocksync)
