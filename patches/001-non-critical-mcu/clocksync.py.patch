@@ -1,0 +1,24 @@
+diff --git a/klippy/clocksync.py b/klippy/clocksync.py
+index 80ed9db..3baddc6 100644
+--- a/klippy/clocksync.py
++++ b/klippy/clocksync.py
+@@ -10,6 +10,7 @@ DECAY = 1. / 30.
+ TRANSMIT_EXTRA = .001
+ 
+ class ClockSync:
++    DISCONNECTED_QUERIES_PENDING = 999999
+     def __init__(self, reactor):
+         self.reactor = reactor
+         self.serial = None
+@@ -141,6 +142,11 @@ class ClockSync:
+         return last_clock + clock_diff
+     def is_active(self):
+         return self.queries_pending <= 4
++    def disconnect(self):
++        # Mark clock sync as inactive by setting high queries_pending
++        self.queries_pending = self.DISCONNECTED_QUERIES_PENDING
++        # Cancel the periodic get_clock timer
++        self.reactor.update_timer(self.get_clock_timer, self.reactor.NEVER)
+     def dump_debug(self):
+         sample_time, clock, freq = self.clock_est
+         return ("clocksync state: mcu_freq=%d last_clock=%d"
