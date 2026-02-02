@@ -29,8 +29,8 @@ Based on Kalico PR #339, adapted for current Klipper architecture.
 Co-authored-by: camshaft <799311+camshaft@users.noreply.github.com>
 ---
  klippy/clocksync.py |   10 ++++
- klippy/mcu.py       |  116 +++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 125 insertions(+), 1 deletion(-)
+ klippy/mcu.py       |  117 +++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 126 insertions(+), 1 deletion(-)
 
 diff --git a/klippy/clocksync.py b/klippy/clocksync.py
 index 80ed9db..3d0927f 100644
@@ -70,7 +70,7 @@ index 80ed9db..3d0927f 100644
          sample_time, clock, freq = self.clock_est
          return ("clocksync state: mcu_freq=%d last_clock=%d"
 diff --git a/klippy/mcu.py b/klippy/mcu.py
-index 909b8dd..668f4ac 100644
+index 909b8dd..e4f8220 100644
 --- a/klippy/mcu.py
 +++ b/klippy/mcu.py
 @@ -758,13 +758,19 @@ class MCUConnectHelper:
@@ -139,7 +139,7 @@ index 909b8dd..668f4ac 100644
          # Low-level connection and helpers
          self._conn_helper = MCUConnectHelper(config, self, clocksync)
          self._serial = self._conn_helper.get_serial()
-@@ -1091,6 +1123,88 @@ class MCU:
+@@ -1091,6 +1123,89 @@ class MCU:
          return self._printer
      def is_fileoutput(self):
          return self._printer.get_start_args().get('debugoutput') is not None
@@ -192,7 +192,8 @@ index 909b8dd..668f4ac 100644
 +            # Reset connection state in conn_helper
 +            self._conn_helper.reset_connection_state()
 +            # Re-register response handlers
-+            self._emergency_stop_cmd = self.lookup_command("emergency_stop")
++            self._conn_helper._emergency_stop_cmd = \
++                self.lookup_command("emergency_stop")
 +            self.register_response(self._conn_helper._handle_shutdown,
 +                                  'shutdown')
 +            self.register_response(self._conn_helper._handle_shutdown,
