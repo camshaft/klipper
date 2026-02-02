@@ -65,7 +65,7 @@ index 80ed9db..3d0927f 100644
          sample_time, clock, freq = self.clock_est
          return ("clocksync state: mcu_freq=%d last_clock=%d"
 diff --git a/klippy/mcu.py b/klippy/mcu.py
-index 909b8dd..1c04280 100644
+index 909b8dd..9c23d78 100644
 --- a/klippy/mcu.py
 +++ b/klippy/mcu.py
 @@ -758,13 +758,19 @@ class MCUConnectHelper:
@@ -128,7 +128,7 @@ index 909b8dd..1c04280 100644
 +            self._reconnect_interval = config.getfloat('reconnect_interval',
 +                                                       2.0, above=0.)
 +            # Register shutdown handler to cancel reconnection timer
-+            printer.register_event_handler("klippy:shutdown", 
++            printer.register_event_handler("klippy:shutdown",
 +                                          self._handle_shutdown_event)
          # Low-level connection and helpers
          self._conn_helper = MCUConnectHelper(config, self, clocksync)
