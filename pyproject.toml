@@ -84,9 +84,6 @@ Documentation = "https://www.klipper3d.org/Overview.html"
 Repository = "https://github.com/Klipper3d/klipper"
 "Bug Tracker" = "https://github.com/Klipper3d/klipper/issues"
 
-[project.scripts]
-klippy = "klippy.klippy:main"
-
 [tool.setuptools]
 # Automatically discover all packages under klippy
 packages = {find = {where = ["."], include = ["klippy*"]}}
