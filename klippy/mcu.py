@@ -1130,7 +1130,8 @@ class MCU:
     def _handle_shutdown_event(self):
         # Cancel reconnection timer on printer shutdown
         if not self._is_critical:
-            self._reactor.update_timer(self._reconnect_timer, self._reactor.NEVER)
+            self._reactor.update_timer(self._reconnect_timer,
+                                       self._reactor.NEVER)
     def _reconnect_event(self, eventtime):
         # Attempt to reconnect a non-critical MCU
         if self._is_critical or not self._disconnected:
@@ -1144,7 +1145,9 @@ class MCU:
             # Try to reattach - for non-critical MCUs, bypass restart checks
             # that could trigger a full printer restart
             try:
-                if self._conn_helper._restart_helper._restart_method == 'rpi_usb':
+                restart_helper = self._conn_helper._restart_helper
+                restart_method = restart_helper._restart_method
+                if restart_method == 'rpi_usb':
                     # Skip the rpi_usb restart check for non-critical MCUs
                     serialport, baud = self._conn_helper.get_serialport()
                     if not os.path.exists(serialport):
@@ -1156,8 +1159,9 @@ class MCU:
                                                 nodeid,
                                                 self._conn_helper._canbus_iface)
                 elif self._conn_helper._baud:
-                    rts = self._conn_helper._restart_helper.lookup_attach_uart_rts()
-                    self._serial.connect_uart(self._conn_helper._serialport,
+                    rts = restart_helper.lookup_attach_uart_rts()
+                    serialport = self._conn_helper._serialport
+                    self._serial.connect_uart(serialport,
                                              self._conn_helper._baud, rts)
                 else:
                     self._serial.connect_pipe(self._conn_helper._serialport)
@@ -1169,9 +1173,12 @@ class MCU:
             self._conn_helper.reset_connection_state()
             # Re-register response handlers
             self._emergency_stop_cmd = self.lookup_command("emergency_stop")
-            self.register_response(self._conn_helper._handle_shutdown, 'shutdown')
-            self.register_response(self._conn_helper._handle_shutdown, 'is_shutdown')
-            self.register_response(self._conn_helper._handle_starting, 'starting')
+            self.register_response(self._conn_helper._handle_shutdown,
+                                  'shutdown')
+            self.register_response(self._conn_helper._handle_shutdown,
+                                  'is_shutdown')
+            self.register_response(self._conn_helper._handle_starting,
+                                  'starting')
             # Mark as connected
             self._disconnected = False
             logging.info("MCU '%s' reconnected", self._name)
