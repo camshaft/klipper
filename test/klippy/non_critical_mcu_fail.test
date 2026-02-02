@@ -1,0 +1,7 @@
+# Test that primary MCU must be critical
+DICTIONARY atmega2560.dict
+CONFIG non_critical_mcu_fail.cfg
+SHOULD_FAIL
+
+# This test should fail during config phase
+STATUS

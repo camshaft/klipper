@@ -1,0 +1,6 @@
+# Tests for non-critical MCU support
+DICTIONARY atmega2560.dict optional_mcu=atmega2560.dict
+CONFIG non_critical_mcu.cfg
+
+# Basic status check - should work even with non-critical MCU configured
+STATUS
