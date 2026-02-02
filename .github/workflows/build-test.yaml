@@ -32,6 +32,15 @@ jobs:
 
     - name: Upload micro-controller data dictionaries
       uses: actions/upload-artifact@v4
+      if: success() || failure()
       with:
         name: data-dict
         path: ci_build/dict
+
+    - name: Upload test logs on failure
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: test-logs
+        path: ci_build/
+        retention-days: 7
