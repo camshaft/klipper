@@ -50,8 +50,8 @@ dependencies = [
 [project.optional-dependencies]
 # Testing dependencies
 test = [
-    "scipy==1.2.3 ; python_version < '3.0'",
-    "scipy==1.15.3 ; python_version >= '3.0'",
+    # scipy is used for regression tests
+    "scipy>=1.2.0",
 ]
 
 # Graphing and analysis tools (for calibration and debugging scripts)
@@ -61,8 +61,8 @@ graphing = [
 ]
 
 # Documentation building dependencies
+# Note: Jinja2 is already included in core dependencies and is compatible with mkdocs
 docs = [
-    "jinja2==3.1.6",
     "mkdocs==1.2.4",
     "mkdocs-material==8.1.3",
     "mkdocs-simple-hooks==0.1.3",
