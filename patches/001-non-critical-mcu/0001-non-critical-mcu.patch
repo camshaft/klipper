@@ -1,3 +1,52 @@
+From: Copilot <copilot@github.com>
+Date: Sun, 2 Feb 2026 02:00:00 +0000
+Subject: [PATCH] Add non-critical MCU support with automatic reconnection
+
+This patch adds support for marking MCUs as non-critical (via is_critical: False)
+so they can disconnect/reconnect without halting prints. Useful for door sensors,
+status displays, and monitoring peripherals.
+
+Changes:
+- New config option: is_critical (bool, default True)
+- Primary MCU must be critical (enforced at config parse)
+- Shutdown/timeout handlers bypass printer shutdown for non-critical MCUs
+- Automatic reconnection timer with configurable reconnect_interval
+- State tracking with is_connected() method
+- UI event notifications: klippy:mcu_disconnected and klippy:mcu_reconnected
+- Added disconnect() method to ClockSync for clean disconnection
+
+Based on Kalico PR #339, adapted for current Klipper architecture.
+
+Co-authored-by: camshaft <799311+camshaft@users.noreply.github.com>
+---
+ klippy/clocksync.py |   6 +++
+ klippy/mcu.py       |  71 ++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 76 insertions(+), 1 deletion(-)
+
+diff --git a/klippy/clocksync.py b/klippy/clocksync.py
+index 80ed9db..3baddc6 100644
+--- a/klippy/clocksync.py
++++ b/klippy/clocksync.py
+@@ -10,6 +10,7 @@ DECAY = 1. / 30.
+ TRANSMIT_EXTRA = .001
+ 
+ class ClockSync:
++    DISCONNECTED_QUERIES_PENDING = 999999
+     def __init__(self, reactor):
+         self.reactor = reactor
+         self.serial = None
+@@ -141,6 +142,11 @@ class ClockSync:
+         return last_clock + clock_diff
+     def is_active(self):
+         return self.queries_pending <= 4
++    def disconnect(self):
++        # Mark clock sync as inactive by setting high queries_pending
++        self.queries_pending = self.DISCONNECTED_QUERIES_PENDING
++        # Cancel the periodic get_clock timer
++        self.reactor.update_timer(self.get_clock_timer, self.reactor.NEVER)
+     def dump_debug(self):
+         sample_time, clock, freq = self.clock_est
+         return ("clocksync state: mcu_freq=%d last_clock=%d"
 diff --git a/klippy/mcu.py b/klippy/mcu.py
 index 909b8dd..7c67ce3 100644
 --- a/klippy/mcu.py
@@ -101,3 +150,5 @@ index 909b8dd..7c67ce3 100644
      # MCU Configuration wrappers
      def setup_pin(self, pin_type, pin_params):
          return self._config_helper.setup_pin(pin_type, pin_params)
+-- 
+2.39.2
