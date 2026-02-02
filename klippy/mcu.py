@@ -1092,6 +1092,7 @@ class MCU:
         if self._is_non_critical and self._name == 'mcu':
             raise config.error("Primary MCU cannot be marked as non-critical")
         self._non_critical_disconnected = False
+        # Keep reactor reference for potential use in reconnection logic
         self._reactor = printer.get_reactor()
         if self._is_non_critical:
             self._reconnect_timer = self._reactor.register_timer(
@@ -1135,8 +1136,10 @@ class MCU:
             self._non_critical_disconnected = False
             logging.info("Non-critical MCU '%s' reconnected", self._name)
             return self._reactor.NEVER
-        except:
+        except (serialhdl.error, OSError) as e:
             # Reconnection failed, try again later
+            logging.debug("Non-critical MCU '%s' reconnection failed: %s",
+                         self._name, str(e))
             return eventtime + self._reconnect_interval
     def _handle_non_critical_disconnect(self):
         # Called when a non-critical MCU disconnects

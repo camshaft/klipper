@@ -10,6 +10,7 @@ DECAY = 1. / 30.
 TRANSMIT_EXTRA = .001
 
 class ClockSync:
+    DISCONNECTED_QUERIES_PENDING = 999999
     def __init__(self, reactor):
         self.reactor = reactor
         self.serial = None
@@ -143,7 +144,7 @@ class ClockSync:
         return self.queries_pending <= 4
     def disconnect(self):
         # Mark clock sync as inactive by setting high queries_pending
-        self.queries_pending = 999999
+        self.queries_pending = self.DISCONNECTED_QUERIES_PENDING
         # Cancel the periodic get_clock timer
         self.reactor.update_timer(self.get_clock_timer, self.reactor.NEVER)
     def dump_debug(self):
