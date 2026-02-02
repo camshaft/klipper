@@ -1,30 +1,22 @@
 # Klipper Rust Workspace
 #
-# This workspace enables gradual porting of performance-critical Python/C code
-# to Rust while maintaining full interoperability with the existing codebase.
-#
-# Design Goals:
-# 1. Both Python and Rust code can coexist and call each other
-# 2. Easy to import changes from upstream (keep both versions)
-# 3. Focus on performance bottlenecks (chelper C modules)
-# 4. Demonstrate functional equivalence between implementations
+# Flat crates directory for easier upstream merging
 
 [workspace]
 members = [
-    "klippy/chelper_rs",
+    "crates/chelper_rs",
 ]
 resolver = "2"
 
 [workspace.package]
 version = "0.12.0"
-edition = "2021"
+edition = "2024"
 license = "GPL-3.0-or-later"
 authors = ["Klipper Contributors"]
 repository = "https://github.com/Klipper3d/klipper"
 
 [workspace.dependencies]
-pyo3 = { version = "0.22", features = ["extension-module", "abi3-py37"] }
-libc = "0.2"
+pyo3 = { version = "0.28", features = ["extension-module", "abi3-py37"] }
 
 [profile.release]
 opt-level = 3
