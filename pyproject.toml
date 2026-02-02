@@ -51,7 +51,7 @@ dependencies = [
 # Testing dependencies
 test = [
     # scipy is used for regression tests
-    "scipy>=1.2.0",
+    "scipy==1.5.3",
 ]
 
 # Graphing and analysis tools (for calibration and debugging scripts)
