@@ -840,6 +840,10 @@ class MCUConnectHelper:
     def force_local_shutdown(self):
         self._is_shutdown = True
         self._shutdown(force=True)
+    def reset_connection_state(self):
+        # Reset connection state flags for reconnection attempts
+        self._is_shutdown = False
+        self._is_timeout = False
     def check_timeout(self, eventtime):
         if (self._clocksync.is_active() or self._mcu.is_fileoutput()
             or self._is_timeout):
@@ -1098,6 +1102,9 @@ class MCU:
                 self._reconnect_event, self._reactor.NEVER)
             self._reconnect_interval = config.getfloat('reconnect_interval',
                                                        2.0, above=0.)
+            # Register shutdown handler to cancel reconnection timer
+            printer.register_event_handler("klippy:shutdown", 
+                                          self._handle_shutdown_event)
         # Low-level connection and helpers
         self._conn_helper = MCUConnectHelper(config, self, clocksync)
         self._serial = self._conn_helper.get_serial()
@@ -1119,18 +1126,28 @@ class MCU:
         return self._is_critical
     def is_connected(self):
         return not self._disconnected
+    def _handle_shutdown_event(self):
+        # Cancel reconnection timer on printer shutdown
+        if not self._is_critical:
+            self._reactor.update_timer(self._reconnect_timer, self._reactor.NEVER)
     def _reconnect_event(self, eventtime):
         # Attempt to reconnect a non-critical MCU
         if self._is_critical or not self._disconnected:
             return self._reactor.NEVER
         try:
+            # Disconnect serial before reconnecting
+            self._serial.disconnect()
             # Try to reattach
             self._conn_helper._attach()
             # Reconnect clocksync
             self._clocksync.connect(self._serial)
-            # Reset is_shutdown and is_timeout flags in conn_helper
-            self._conn_helper._is_shutdown = False
-            self._conn_helper._is_timeout = False
+            # Reset connection state in conn_helper
+            self._conn_helper.reset_connection_state()
+            # Re-register response handlers
+            self._emergency_stop_cmd = self.lookup_command("emergency_stop")
+            self.register_response(self._conn_helper._handle_shutdown, 'shutdown')
+            self.register_response(self._conn_helper._handle_shutdown, 'is_shutdown')
+            self.register_response(self._conn_helper._handle_starting, 'starting')
             # Mark as connected
             self._disconnected = False
             logging.info("MCU '%s' reconnected", self._name)
@@ -1145,6 +1162,9 @@ class MCU:
     def _handle_disconnect(self):
         # Called when a non-critical MCU disconnects
         if self._is_critical:
+            return
+        # Guard against multiple invocations
+        if self._disconnected:
             return
         self._disconnected = True
         self._clocksync.disconnect()
