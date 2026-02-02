@@ -2,6 +2,10 @@
 name: Build test
 on: [push, pull_request]
 
+# Minimal permissions for security
+permissions:
+  contents: read
+
 # Cancel in-progress runs when a new workflow with the same ref is triggered
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
