@@ -9,8 +9,11 @@ use std::time::Instant;
 
 /// Get monotonic time in seconds
 ///
-/// Drop-in replacement for C get_monotonic() function.
+/// Drop-in replacement for C get_monotonic() function API.
 /// Uses std::time::Instant for idiomatic Rust timing.
+/// 
+/// Note: Returns elapsed time since first call, not absolute system monotonic time.
+/// This is sufficient for benchmarking and relative timing purposes.
 #[pyfunction]
 pub fn get_monotonic() -> PyResult<f64> {
     static START: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
