@@ -7,32 +7,14 @@
 use pyo3::prelude::*;
 use std::time::Instant;
 
-/// Get monotonic time in seconds (Rust implementation)
+/// Get monotonic time in seconds
 ///
+/// Drop-in replacement for C get_monotonic() function.
 /// Uses std::time::Instant for idiomatic Rust timing.
-/// Note: Returns elapsed time since first call, not absolute monotonic time.
-/// This is different from the C implementation but more idiomatic in Rust.
-/// For benchmarking purposes, relative timing is sufficient.
 #[pyfunction]
-pub fn get_monotonic_rs() -> PyResult<f64> {
-    // Note: Instant doesn't provide absolute time, only elapsed
-    // For absolute monotonic time, we'd need to track a reference point
-    // This is a simplified version for benchmarking purposes
+pub fn get_monotonic() -> PyResult<f64> {
     static START: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
     let start = START.get_or_init(Instant::now);
     let elapsed = start.elapsed();
-    Ok(elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 * 1e-9)
-}
-
-/// Benchmark function call overhead
-///
-/// Measures the overhead of calling Rust functions from Python.
-#[pyfunction]
-pub fn benchmark_overhead(iterations: usize) -> PyResult<f64> {
-    let start = Instant::now();
-    for _ in 0..iterations {
-        std::hint::black_box(1 + 1);
-    }
-    let elapsed = start.elapsed();
-    Ok(elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 * 1e-9)
+    Ok(elapsed.as_secs_f64())
 }

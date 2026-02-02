@@ -44,23 +44,28 @@ def main():
     
     print("\nBenchmarking chelper_rs functions:\n")
     
-    # Benchmark available functions
-    iterations = 100000
+    # List of functions to benchmark (function_name, iterations)
+    functions_to_test = [
+        ('get_monotonic', 100000),
+    ]
     
-    if hasattr(rust_lib, 'get_monotonic_rs'):
-        total, per_call = benchmark(rust_lib.get_monotonic_rs, iterations)
-        print(f"get_monotonic_rs: {per_call:.2f}ns/call ({total:.4f}s total)")
+    for func_name, iterations in functions_to_test:
+        rust_func = getattr(rust_lib, func_name, None)
+        c_func = getattr(clib, func_name, None) if c_available else None
         
-        if c_available and hasattr(clib, 'get_monotonic'):
-            c_total, c_per_call = benchmark(clib.get_monotonic, iterations)
+        if rust_func is None:
+            print(f"{func_name}: Not implemented in Rust")
+            continue
+        
+        # Benchmark Rust version
+        total, per_call = benchmark(rust_func, iterations)
+        print(f"{func_name}: {per_call:.2f}ns/call ({total:.4f}s total)")
+        
+        # Compare with C if available
+        if c_func is not None:
+            c_total, c_per_call = benchmark(c_func, iterations)
             speedup = c_total / total
-            print(f"  vs C get_monotonic: {c_per_call:.2f}ns/call ({speedup:.2f}x)")
-    
-    # Benchmark overhead function
-    OVERHEAD_ITERATIONS = 1000
-    if hasattr(rust_lib, 'benchmark_overhead'):
-        result = rust_lib.benchmark_overhead(OVERHEAD_ITERATIONS)
-        print(f"\nbenchmark_overhead({OVERHEAD_ITERATIONS}): {result*1e6:.2f}µs")
+            print(f"  vs C: {c_per_call:.2f}ns/call ({speedup:.2f}x)")
     
     return 0
 
