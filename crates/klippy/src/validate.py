@@ -37,8 +37,6 @@ def validate_config(config_file):
     import pins
     import mcu
     import toolhead
-    import gcode
-    import webhooks
 
     logging.getLogger().setLevel(logging.INFO)
     logging.info("Validating configuration: %s", config_file)
@@ -58,6 +56,8 @@ def validate_config(config_file):
         'gcode_fd': devnull.fileno(),
         # Mark as file input so GCodeIO doesn't try to set up real I/O handlers
         'debuginput': '/dev/null',
+        # Set debugoutput to skip hardware access in sensors like temperature_host
+        'debugoutput': '/dev/null',
     }
 
     # Import Printer class
