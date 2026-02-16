@@ -193,8 +193,8 @@
           ${lib.concatMapStringsSep "\n" installPlugin plugins}
 
           # Re-wrap the binary to point to our new lib/klippy
-          rm $out/bin/klipper
-          makeWrapper ${klippy-base}/bin/klipper-unwrapped $out/bin/klipper \
+          rm $out/bin/klippy
+          makeWrapper ${klippy-base}/bin/klippy-unwrapped $out/bin/klippy \
             --set PYTHONHOME "${pythonEnv}" \
             --prefix PYTHONPATH : "$out/lib/klippy" \
             --prefix LD_LIBRARY_PATH : "${python3}/lib" \
