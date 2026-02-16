@@ -1,0 +1,17 @@
+[workspace]
+members = ["crates/klippy"]
+resolver = "3"
+
+[workspace.package]
+license = "GPL-3.0"
+edition = "2024"
+version = "0.0.0"
+
+[workspace.dependencies]
+anyhow = { version = "1" }
+clap = { version = "4", features = ["derive"] }
+pyo3 = { version = "0.28.1", features = ["auto-initialize"] }
+tokio = { version = "1", features = ["sync"] }
+tracing = { version = "0.1" }
+tracing-journald = { version = "0.3" }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "registry"] }

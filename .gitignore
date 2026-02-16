@@ -9,3 +9,9 @@ klippy/.version
 dist/
 build/
 __pycache__/
+# Rust build artifacts
+target/
+# Nix
+result
+result-*
+.direnv/

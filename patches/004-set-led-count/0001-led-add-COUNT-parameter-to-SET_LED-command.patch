@@ -1,0 +1,68 @@
+From 7f33913892ad867958adf8bce140c883eecb57e2 Mon Sep 17 00:00:00 2001
+From: Cameron Bytheway <bytheway.cameron@gmail.com>
+Date: Mon, 2 Feb 2026 16:09:46 -0700
+Subject: [PATCH] led: add COUNT parameter to SET_LED command
+
+Add a COUNT parameter to the SET_LED command that allows setting
+multiple consecutive LEDs to the same color in a single command.
+
+Example usage:
+  SET_LED LED=strip RED=1.0 INDEX=1 COUNT=10
+
+This sets LEDs 1-10 to red in one command, instead of requiring
+10 separate SET_LED calls or setting the entire strip.
+
+The COUNT parameter defaults to 1 for backwards compatibility.
+When INDEX is not specified (setting all LEDs), COUNT is ignored.
+---
+ klippy/extras/led.py | 16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
+
+diff --git a/klippy/extras/led.py b/klippy/extras/led.py
+index 4dc71f3c..ef1b14e8 100644
+--- a/klippy/extras/led.py
++++ b/klippy/extras/led.py
+@@ -35,16 +35,21 @@ class LEDHelper:
+                                    desc=self.cmd_SET_LED_TEMPLATE_help)
+     def get_status(self, eventtime=None):
+         return {'color_data': self.led_state}
+-    def _set_color(self, index, color):
++    def _set_color(self, index, color, count=1):
+         if index is None:
+             new_led_state = [color] * self.led_count
+             if self.led_state == new_led_state:
+                 return
+         else:
+-            if self.led_state[index - 1] == color:
+-                return
+             new_led_state = list(self.led_state)
+-            new_led_state[index - 1] = color
++            end_index = min(index - 1 + count, self.led_count)
++            changed = False
++            for i in range(index - 1, end_index):
++                if new_led_state[i] != color:
++                    new_led_state[i] = color
++                    changed = True
++            if not changed:
++                return
+         self.led_state = new_led_state
+         self.need_transmit = True
+     def _template_update(self, index, text):
+@@ -78,12 +83,13 @@ class LEDHelper:
+         blue = gcmd.get_float('BLUE', 0., minval=0., maxval=1.)
+         white = gcmd.get_float('WHITE', 0., minval=0., maxval=1.)
+         index = gcmd.get_int('INDEX', None, minval=1, maxval=self.led_count)
++        count = gcmd.get_int('COUNT', 1, minval=1, maxval=self.led_count)
+         transmit = gcmd.get_int('TRANSMIT', 1)
+         sync = gcmd.get_int('SYNC', 1)
+         color = (red, green, blue, white)
+         # Update and transmit data
+         def lookahead_bgfunc(print_time):
+-            self._set_color(index, color)
++            self._set_color(index, color, count)
+             if transmit:
+                 self._check_transmit(print_time)
+         if sync:
+-- 
+2.50.1
+
