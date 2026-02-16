@@ -10,7 +10,6 @@ DECAY = 1. / 30.
 TRANSMIT_EXTRA = .001
 
 class ClockSync:
-    DISCONNECTED_QUERIES_PENDING = 999999
     def __init__(self, reactor):
         self.reactor = reactor
         self.serial = None
@@ -58,11 +57,6 @@ class ClockSync:
         serial.set_clock_est(freq, self.reactor.monotonic(), 0, 0)
     # MCU clock querying (_handle_clock is invoked from background thread)
     def _get_clock_event(self, eventtime):
-        # Check if disconnected before sending
-        if self.queries_pending >= self.DISCONNECTED_QUERIES_PENDING:
-            return self.reactor.NEVER
-        if self.get_clock_cmd is None or self.cmd_queue is None:
-            return self.reactor.NEVER
         self.serial.raw_send(self.get_clock_cmd, 0, 0, self.cmd_queue)
         self.queries_pending += 1
         # Use an unusual time for the next event so clock messages
@@ -147,12 +141,6 @@ class ClockSync:
         return last_clock + clock_diff
     def is_active(self):
         return self.queries_pending <= 4
-    def disconnect(self):
-        # Mark clock sync as inactive by setting high queries_pending
-        self.queries_pending = self.DISCONNECTED_QUERIES_PENDING
-        # Cancel the periodic get_clock timer if it exists
-        if self.get_clock_timer is not None:
-            self.reactor.update_timer(self.get_clock_timer, self.reactor.NEVER)
     def dump_debug(self):
         sample_time, clock, freq = self.clock_est
         return ("clocksync state: mcu_freq=%d last_clock=%d"
