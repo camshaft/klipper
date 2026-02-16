@@ -33,7 +33,7 @@ struct Args {
 
     /// API server unix domain socket filename
     #[arg(short = 'a', long)]
-    apiserver: Option<String>,
+    api_server: Option<String>,
 
     /// Write log to file instead of stderr (use "/var/log/journald" to send to journald)
     #[arg(short = 'l', long)]
@@ -111,7 +111,7 @@ fn main() -> Result<()> {
         start_args.set_item("config_file", args.config_file.display().to_string())?;
         start_args.set_item("start_reason", "startup")?;
 
-        if let Some(ref apiserver) = args.apiserver {
+        if let Some(ref apiserver) = args.api_server {
             start_args.set_item("apiserver", apiserver)?;
         }
 
