@@ -125,10 +125,10 @@
       ln -s ${klippy-chelper}/chelper $out/lib/klippy/chelper
 
       # Install the Rust binary
-      install -Dm755 ${klippy-bin}/bin/klippy $out/bin/klipper-unwrapped
+      install -Dm755 ${klippy-bin}/bin/klippy $out/bin/klippy-unwrapped
 
       # Wrap binary with Python environment
-      makeWrapper $out/bin/klipper-unwrapped $out/bin/klipper \
+      makeWrapper $out/bin/klippy-unwrapped $out/bin/klippy \
         --set PYTHONHOME "${pythonEnv}" \
         --prefix PYTHONPATH : "$out/lib/klippy" \
         --prefix LD_LIBRARY_PATH : "${python3}/lib" \
