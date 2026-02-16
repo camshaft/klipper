@@ -4,6 +4,10 @@
 # properly preserve choice options (like clock reference settings) from
 # the provided firmware config.
 #
+# Expects klipper-src to be the filtered firmware source (klipper-src.firmware).
+# This ensures that changes to Python, Rust, or nix files don't trigger
+# firmware rebuilds.
+#
 # Usage:
 #   klipper-firmware { mcu = "leviathan"; firmwareConfig = ./klipper.config; }
 {

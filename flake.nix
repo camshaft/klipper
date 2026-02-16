@@ -32,19 +32,6 @@
     ];
 
     forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
-
-    # Create pkgs + craneLib for a given system
-    mkPkgs = system:
-      import nixpkgs {
-        inherit system;
-        overlays = [rust-overlay.overlays.default];
-      };
-
-    mkCraneLib = system: let
-      pkgs = mkPkgs system;
-      rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
-    in
-      (crane.mkLib pkgs).overrideToolchain rustToolchain;
   in {
     #####################################################################
     #   Packages
@@ -52,27 +39,32 @@
 
     packages = forAllSystems (
       system: let
-        pkgs = mkPkgs system;
-        craneLib = mkCraneLib system;
-
-        katapultPkgs = pkgs.callPackage ./nix/katapult.nix {
-          katapult-src = katapult;
+        # Create pkgs with overlay applied
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [self.overlays.default];
         };
       in {
-        default = self.packages.${system}.klippy;
+        default = pkgs.klippy;
 
-        klippy = pkgs.callPackage ./nix/klippy.nix {
-          inherit craneLib;
-          klipper-src = self.packages.${system}.klipper-src;
-        };
+        # Granular klippy packages
+        inherit (pkgs) klippy klippy-bin klippy-chelper klippy-python;
 
-        klipper-src = pkgs.callPackage ./nix/source.nix {
-          src = self;
-        };
+        # Source packages
+        klipper-src = pkgs.klipper-src.full;
+
+        # Firmware (pre-built host MCU firmware)
+        inherit (pkgs) klipper-host-firmware;
 
         # Katapult bootloader and flashing scripts
-        inherit (katapultPkgs) katapult scripts;
-        katapult-scripts = katapultPkgs.scripts;
+        inherit (pkgs) katapult katapult-scripts;
+
+        # Utilities
+        inherit (pkgs) klipper-genconf;
+
+        # Note: klipper-firmware, katapult-firmware (builder functions),
+        # and klipperFormat (attribute set) are available via the overlay
+        # but are not derivations, so they cannot be exposed as packages.
       }
     );
 
@@ -128,13 +120,14 @@
         plugins ? [],
         extraPythonPackages ? ps: [],
       }: let
-        pkgs = mkPkgs system;
-        craneLib = mkCraneLib system;
-      in
-        pkgs.callPackage ./nix/klippy.nix {
-          inherit craneLib plugins extraPythonPackages;
-          klipper-src = self.packages.${system}.klipper-src;
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [
+            (self.lib.mkOverlay {inherit plugins extraPythonPackages;})
+          ];
         };
+      in
+        pkgs.klippy;
 
       # Build klipper MCU firmware
       mkFirmware = {
@@ -142,11 +135,12 @@
         mcu ? "mcu",
         firmwareConfig,
       }: let
-        pkgs = mkPkgs system;
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [self.overlays.default];
+        };
       in
-        (pkgs.callPackage ./nix/firmware.nix {
-          klipper-src = self.packages.${system}.klipper-src;
-        }) {inherit mcu firmwareConfig;};
+        pkgs.klipper-firmware {inherit mcu firmwareConfig;};
 
       # Build katapult bootloader firmware
       mkKatapultFirmware = {
@@ -154,96 +148,35 @@
         mcu ? "mcu",
         firmwareConfig,
       }: let
-        pkgs = mkPkgs system;
-      in
-        (pkgs.callPackage ./nix/katapult-firmware.nix {
-          katapult-src = katapult;
-        }) {inherit mcu firmwareConfig;};
-
-      # Generate a flash script for a single MCU
-      #
-      # Produces a derivation with bin/flash-<name> (and optionally
-      # bin/flash-<name>-bootloader if katapultFirmwareConfig is set).
-      #
-      # Usage:
-      #   klipper.lib.mkFlashScript {
-      #     name = "leviathan";
-      #     firmwareConfig = ./boards/leviathan.config;
-      #     device = { type = "can"; id = "abc123def"; };
-      #     useKatapult = true;
-      #     # katapultFirmwareConfig = ./boards/leviathan-katapult.config;
-      #   }
-      mkFlashScript = {system, ...} @ args: let
-        pkgs = mkPkgs system;
-        craneLib = mkCraneLib system;
-        flashLib = pkgs.callPackage ./nix/flash.nix {
-          klippy = pkgs.callPackage ./nix/klippy.nix {
-            inherit craneLib;
-            klipper-src = self.packages.${system}.klipper-src;
-          };
-          katapult-scripts =
-            (pkgs.callPackage ./nix/katapult.nix {
-              katapult-src = katapult;
-            })
-            .scripts;
-          klipper-firmware = pkgs.callPackage ./nix/firmware.nix {
-            klipper-src = self.packages.${system}.klipper-src;
-          };
-          katapult-firmware = pkgs.callPackage ./nix/katapult-firmware.nix {
-            katapult-src = katapult;
-          };
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [self.overlays.default];
         };
       in
-        flashLib.mkFlashScript (builtins.removeAttrs args ["system"]);
+        pkgs.katapult-firmware {inherit mcu firmwareConfig;};
+
+      # Generate a flash script for a single MCU
+      mkFlashScript = {system, ...} @ args: let
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [self.overlays.default];
+        };
+      in
+        pkgs.mkFlashScript (builtins.removeAttrs args ["system"]);
 
       # Generate flash scripts for multiple MCUs
-      #
-      # Produces a combined derivation with flash scripts for all MCUs.
-      #
-      # Usage:
-      #   klipper.lib.mkFlashScripts {
-      #     mcus = [
-      #       { name = "leviathan"; firmwareConfig = ./boards/leviathan.config;
-      #         device = { type = "can"; id = "abc123"; }; useKatapult = true; }
-      #       { name = "chamber"; firmwareConfig = ./boards/chamber.config;
-      #         device = { type = "can"; id = "def456"; }; useKatapult = true; }
-      #     ];
-      #   }
       mkFlashScripts = {
         system,
         mcus,
       }: let
-        pkgs = mkPkgs system;
-        craneLib = mkCraneLib system;
-        flashLib = pkgs.callPackage ./nix/flash.nix {
-          klippy = pkgs.callPackage ./nix/klippy.nix {
-            inherit craneLib;
-            klipper-src = self.packages.${system}.klipper-src;
-          };
-          katapult-scripts =
-            (pkgs.callPackage ./nix/katapult.nix {
-              katapult-src = katapult;
-            })
-            .scripts;
-          klipper-firmware = pkgs.callPackage ./nix/firmware.nix {
-            klipper-src = self.packages.${system}.klipper-src;
-          };
-          katapult-firmware = pkgs.callPackage ./nix/katapult-firmware.nix {
-            katapult-src = katapult;
-          };
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [self.overlays.default];
         };
       in
-        flashLib.mkFlashScripts mcus;
+        pkgs.mkFlashScripts mcus;
 
       # Create a Klipper-compatible INI format for a given pkgs set
-      #
-      # The standard pkgs.formats.ini is broken for Klipper:
-      #   - Booleans: "true"/"false" instead of "True"/"False"
-      #   - No multiline gcode support
-      #   - Wrong separator ("=" instead of ":")
-      #
-      # Usage in a NixOS module:
-      #   format = klipper.lib.mkKlipperFormat pkgs;
       mkKlipperFormat = pkgs:
         import ./nix/format.nix {
           inherit (pkgs) lib;
@@ -251,26 +184,20 @@
         };
 
       # Build klipper host MCU firmware (Linux process MCU)
-      #
-      # The host MCU runs as a Linux process and exposes host GPIO
-      # to klipper via /tmp/klipper_host_mcu.
-      #
-      # Usage:
-      #   klipper.lib.mkHostFirmware { }
-      #   klipper.lib.mkHostFirmware { firmwareConfig = ./my-host.config; }
       mkHostFirmware = {
         system,
         firmwareConfig ? null,
       }: let
-        pkgs = mkPkgs system;
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [self.overlays.default];
+        };
         defaultConfig = pkgs.writeText "host-mcu-klipper.config" ''
           CONFIG_LOW_LEVEL_OPTIONS=y
           CONFIG_MACH_LINUX=y
         '';
       in
-        (pkgs.callPackage ./nix/firmware.nix {
-          klipper-src = self.packages.${system}.klipper-src;
-        }) {
+        pkgs.klipper-firmware {
           mcu = "host";
           firmwareConfig =
             if firmwareConfig != null
@@ -300,7 +227,10 @@
 
     devShells = forAllSystems (
       system: let
-        pkgs = mkPkgs system;
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [rust-overlay.overlays.default];
+        };
         rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
 
         pythonEnv = pkgs.python3.withPackages (ps:

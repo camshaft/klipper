@@ -35,7 +35,7 @@ struct Args {
     #[arg(short = 'a', long)]
     apiserver: Option<String>,
 
-    /// Write log to file instead of stderr (use "journald" to send to journald)
+    /// Write log to file instead of stderr (use "/var/log/journald" to send to journald)
     #[arg(short = 'l', long)]
     logfile: Option<String>,
 
@@ -69,7 +69,7 @@ fn main() -> Result<()> {
 
     let filter = tracing_subscriber::filter::LevelFilter::from_level(log_level);
 
-    let use_journald = args.logfile.as_deref() == Some("journald");
+    let use_journald = args.logfile.as_deref() == Some("/var/log/journald");
 
     if use_journald {
         let journald_layer = tracing_journald::layer().context("Failed to connect to journald")?;
@@ -163,10 +163,12 @@ fn main() -> Result<()> {
         let bridge = queuelogger::setup_tracing_logger(py, debuglevel)?;
         let bglogger: Option<Bound<'_, PyAny>> = Some(bridge.into_any());
 
-        if let Some(ref logfile) = args.logfile.as_deref().filter(|l| *l != "journald") {
-            start_args.set_item("log_file", logfile)?;
-        } else if !use_journald && args.debugoutput.is_none() {
-            tracing::warn!("No log file specified! Severe timing issues may result!");
+        if !use_journald {
+            if let Some(ref logfile) = args.logfile.as_deref() {
+                start_args.set_item("log_file", logfile)?;
+            } else if args.debugoutput.is_none() {
+                tracing::warn!("No log file specified! Severe timing issues may result!");
+            }
         }
 
         // Log version info
