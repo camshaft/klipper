@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Apply patches to Klipper source code
 # This script applies all patches in numbered order using git am
 
