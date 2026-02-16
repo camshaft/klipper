@@ -97,6 +97,7 @@ in {
         ProtectHome = true;
         ProtectSystem = "strict";
         PrivateTmp = false; # needs /tmp for the socket
+        ReadWritePaths = ["/tmp"]; # allow creating the socket symlink
         DeviceAllow = [
           # GPIO access
           "char-gpiochip rw"

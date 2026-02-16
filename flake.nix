@@ -327,6 +327,7 @@
               echo ""
               echo "   Available commands:"
               echo "     klipper                    - Run klipper"
+              echo "     klipper-console            - MCU debugging console"
               echo "     klipper-calibrate-shaper   - Calibrate input shaper"
               echo "     klipper-canbus-query       - Query CAN bus devices"
               echo "     klipper-flash-can           - Flash firmware via CAN"

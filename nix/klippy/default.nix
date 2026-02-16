@@ -147,6 +147,11 @@
       makeWrapper ${scriptsEnv}/bin/python3 $out/bin/klipper-flash-can \
         --add-flags "$out/lib/scripts/flash_can.py"
 
+      # Install klipper-console (MCU debugging console)
+      makeWrapper ${pythonEnv}/bin/python3 $out/bin/klipper-console \
+        --prefix PYTHONPATH : "$out/lib/klippy" \
+        --add-flags "$out/lib/klippy/console.py"
+
       runHook postInstall
     '';
 
