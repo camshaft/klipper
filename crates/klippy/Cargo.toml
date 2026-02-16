@@ -3,6 +3,7 @@ name = "klippy"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+include = ["/src"]
 
 [dependencies]
 anyhow.workspace = true

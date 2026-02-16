@@ -54,6 +54,10 @@ struct Args {
     /// Perform an import module test
     #[arg(long)]
     import_test: bool,
+
+    /// Validate configuration file without connecting to MCUs
+    #[arg(long)]
+    validate_config: bool,
 }
 
 /// Main entry point
@@ -91,6 +95,19 @@ fn main() -> Result<()> {
         })
         .context("Failed to run import test")?;
 
+        return Ok(());
+    }
+
+    // Handle config validation
+    if args.validate_config {
+        info!("Validating configuration file: {}", args.config_file.display());
+        Python::attach(|py| -> Result<()> {
+            validate_config(py, &args.config_file)?;
+            Ok(())
+        })
+        .context("Failed to validate config")?;
+
+        info!("Configuration validation successful");
         return Ok(());
     }
 
@@ -273,5 +290,37 @@ fn import_test(py: Python) -> Result<()> {
     }
 
     info!("Import test completed successfully");
+    Ok(())
+}
+
+/// Validate configuration file without connecting to MCUs
+fn validate_config(py: Python, config_file: &std::path::Path) -> Result<()> {
+    use pyo3::types::PyModule;
+    use std::ffi::CString;
+
+    // Debug: show which Python is being used
+    let sys = py.import("sys")?;
+    let executable: String = sys.getattr("executable")?.extract()?;
+    debug!("Using Python: {}", executable);
+
+    // Load the validation helper script embedded in the binary
+    let validate_code = include_str!("validate.py");
+    let code = CString::new(validate_code).context("Invalid validation code")?;
+    let filename = c"validate.py";
+    let module_name = c"validate";
+
+    // Run the validation module
+    let validate_mod = PyModule::from_code(py, &code, filename, module_name)
+        .context("Failed to load validation module")?;
+
+    let config_path = config_file.display().to_string();
+    let result: bool = validate_mod
+        .call_method1("validate_config", (config_path,))?
+        .extract()?;
+
+    if !result {
+        anyhow::bail!("Configuration validation failed");
+    }
+
     Ok(())
 }

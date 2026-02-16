@@ -72,8 +72,9 @@ in {
       # Include src/ and crates/ directories and their contents
       isSrcDir = relPath == "src" || lib.hasPrefix "src/" relPath;
       isCratesDir = relPath == "crates" || lib.hasPrefix "crates/" relPath;
-      # For files, only include .rs files in src/crates
-      isRustCode = (isSrcDir || isCratesDir) && (type == "directory" || lib.hasSuffix ".rs" relPath);
+      # For files, include .rs and .py files in src/crates
+      # (.py files are embedded in the Rust binary via include_str!)
+      isRustCode = (isSrcDir || isCratesDir) && (type == "directory" || lib.hasSuffix ".rs" relPath || lib.hasSuffix ".py" relPath);
     in
       isCargoFile || isToolchain || isRustCode;
   };
